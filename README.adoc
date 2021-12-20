@@ -1,0 +1,88 @@
+= Bases de Datos I: Trabajo Práctico 
+Kevin Ruiz <kevinruiza77@gmail.com>; Sanchez Camila <csanchez_98@outlook.com>; Javier Santillan <javierignaciosantillan.u@gmail.com>
+v1, {docdate}. Docentes Hernan Rondelli y Hernan Czemerinsky 
+:title-page:
+:numbered:
+:source-highlighter: coderay
+:tabsize: 4
+
+== Introducción
+
+El objetivo del trabajo práctico es implementar una base de datos que almacene la información relativa a una tarjeta de crédito. A su vez desarrollar funciones capaces de cargar instancias de los datos, autorizar una compra, generar un resumen de una tarjeta y generar alertas a los clientes en caso de ciertas irregularidades.
+Por último, para poder comparar el modelo relacional con un modelo no relacional NoSQL, se implementa una base de datos NoSQL (BoltDB) basada en JSON, la cual carga tres instancias de datos de 3 entidades pertenecientes a la base de datos.
+
+== Descripción
+En esta sección se describen las principales dificultades que fueron apareciendo a lo largo del trabajo y las
+soluciones de las mismas.
+
+En la autorización de compra::
+Con respecto a la autorización de la compra, la principal dificultad estuvo en delimitar las diferentes condiciones propuestas para determinar que una compra fue aprobada o rechazada. Se opto por la implementación de un método auxiliar que vaya agregando los rechazos cada vez que se producían en la tabla correspondiente y a la vez determinar la cantidad de rechazos introducidos por cada tarjeta, ya que era otra condición requerida en la sección de alertas.
+En la generación del resumen::
+En este apartado el principal problema fue poder identificar que el campo de una tabla se encontrara vacío ya que si el campo estaba vacío el numero de resumen debería solamente comenzar con 1, en cambio si no lo estaba lo que debería hacer es buscar el ultimo numero de resumen para luego incrementar en 1 su valor y obtener el numero de resumen que necesitamos. La solución fue utilizar la sentencia <campo > IS NOT NULL para ver si el campo estaba vacío y para el otro caso hacer un MAX() del campo para hallar el ultimo numero de resumen añadido.
+En las alertas a los clientes::
+En este desarrollo, nuestra mayor dificultad se encontró al momento de ordenar los diferentes requerimientos respecto a las condiciones en las cuales se debía cargar una alerta. Por lo que se decidió realizar diferentes funciones para dividir las cláusulas pedidas. En primer lugar, se dispuso a crear una función que agregue una alerta cada vez que se realizaba un rechazo. Después se decidió chequear los limites de rechazos cuando se rechazaba una compra, para ir determinado las alertas agregadas. Posteriormente, se decidió realizar una función aparte que controle la diferencia de tiempos entre compras y localizaciones. En el ultimo caso, la principal dificultad fue investigar nuevos métodos para el manejo de timestamps y tener en claro las condiciones pedidas. 
+
+
+== Implementación
+
+Al momento de implementar la base de datos SQL se opto hacerlo mediante el RDBMS postgreSQL. Por otro lado para introducir toda la inteligencia y datos fue utilizado el lenguaje de programación GO. Para ello se implementaron 6 módulos los cuales serán descriptos a continuación:
+
+Módulo Main::
+- Es el modulo principal, su principal función es actuar de mediador entre el programa y el usuario, para ello muestra un menú por consola, el cual permite realizar acciones tales como crear la base de datos, cargar tablas en ella, cargar foreign keys y primary keys, cargar las tablas etc. 
+
+.Código de main.go
+[source,GO]
+----
+include::main.go[]
+----
+Módulo SQL::
+- Este modulo funciona como una capa de abstracción entre el modulo main y los stored procedures de la base de datos, también contiene algunos métodos básicos para la creación de base de datos.
+.Código de main.go
+[source,GO]
+----
+include::funciones/sql.go[]
+----
+
+
+Módulo Tablas:: 
+- Este modulo se encarga de hacer todas las querys necesarias para crear y cargar las tablas en la base de datos.
+[source,GO]
+----
+include::funciones/tablas.go[]
+----
+
+
+Módulo StoredProcedures::
+- Este modulo define todos los Stored Procedures utilizados en el trabajo.
+[source,GO]
+----
+include::funciones/storedProcedures.go[]
+----
+
+
+Módulo cargarSPsyTriggers:: 
+
+- Este modulo se encarga de cargar los triggers y los stored procedures en la base de datos.
+[source,GO]
+----
+include::funciones/cargarSPsyTriggers.go[]
+----
+
+
+
+Módulo NoSql::
+- Este modulo contiene todas las funciones necesarias para tratar con la base de datos no SQL basada en JSON.
+[source,GO]
+----
+include::funciones/nosql.go[]
+----
+
+
+== Conclusiones
+
+Ya al final, podemos decir que a pesar del desafió que significó el trabajo práctico, no solo pudimos hacerle frente, sino que también  mejoramos nuestras habilidades sobre el manejo de una base de datos secuencial, sobre git y aprendimos a programar en GO. 
+
+Durante el desarrollo del trabajo, nos encontramos con problemas de los cuales sacamos nuevos conocimientos ya sea, a partir de la lectura de la documentación de postgres o a partir del cuidadoso análisis del material presentado en las clases. Uno de estos podría ser por ejemplo, la utilización de un PERFORM en lugar de un SELECT. 
+
+Un problema que no pudimos resolver fue que queríamos que la base de datos se borrara al apretar el '0' en el menú, pero a la primera vez saltaba un error que decia "database "tarjeta" is being accessed by other users". Por el momento no hemos conseguido arreglarlo. La base de datos se borrar si corremos de nuevo el programa y apretamos '0' directamente.
+
